@@ -1,0 +1,64 @@
+version: "3.7"
+services:
+  mysql:
+    image: mysql:5.7.28
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
+    ports:
+      - "3307:3306"
+    networks:
+      - network
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345abc
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  adminservice:
+    image: bostin/apollo-adminservice:1.5.1
+    ports:
+      - 8090:8090
+    environment:
+      - "DS_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8"
+      - "DS_USERNAME=root"
+      - "DS_PASSWORD=12345abc"
+    volumes:
+      - ./logs/adminservice:/opt/logs
+    networks:
+      - network
+
+  configservice:
+    image: bostin/apollo-configservice:1.5.1
+    ports:
+      - 8080:8080
+    environment:
+      - "DS_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8"
+      - "DS_USERNAME=root"
+      - "DS_PASSWORD=12345abc"
+    volumes:
+      - ./logs/configservice:/opt/logs
+    networks:
+      - network
+
+  portal:
+    image: bostin/apollo-portal:1.5.1
+    ports:
+      - 8070:8070
+    environment:
+      - "DS_URL=jdbc:mysql://mysql:3306/ApolloPortalDB?characterEncoding=utf8"
+      - "DS_USERNAME=root"
+      - "DS_PASSWORD=12345abc"
+      - "DEV_META=http://configservice:8080"
+      - "FAT_META=http://configservice:8080"
+      - "UAT_META=http://configservice:8080"
+      - "LPT_META=http://configservice:8080"
+      - "PRO_META=http://configservice:8080"
+    volumes:
+      - ./logs/portal:/opt/logs
+    networks:
+      - network
+
+networks:
+  network:
